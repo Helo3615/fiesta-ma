@@ -1,0 +1,142 @@
+:root {
+  --bg: #fff7f0;
+  --fg: #2b2b2b;
+  --accent: #d6336c;
+  --accent-light: #ffe3ec;
+  --muted: #6c757d;
+  --border: #f0d0dc;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+  padding: 1.5rem;
+}
+
+.container {
+  max-width: 560px;
+  margin: 2rem auto;
+  background: #ffffff;
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(214, 51, 108, 0.08);
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+}
+
+.field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 0 0 1.5rem;
+}
+
+.field legend {
+  font-weight: 600;
+  color: var(--accent);
+  padding: 0 0.5rem;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #faf3f6;
+}
+
+.option:last-child {
+  border-bottom: none;
+}
+
+.option input[type="checkbox"] {
+  margin-top: 0.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+
+.option.disabled {
+  opacity: 0.5;
+}
+
+.option.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.option-label .label-text {
+  font-weight: 500;
+}
+
+.option-label .count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.option-label .reason {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-top: 0.1rem;
+}
+
+.btn-submit {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-submit:hover {
+  background: #b8275a;
+}
+
+.btn-submit:disabled {
+  background: #c9a6b6;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 1rem;
+  text-align: center;
+  font-weight: 500;
+  min-height: 1.25rem;
+}
+
+.message.success {
+  color: #2b8a3e;
+}
+
+.message.error {
+  color: #c92a2a;
+}

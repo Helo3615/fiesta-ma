@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fête pour Maman</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>🎉 Fête pour Maman</h1>
+      <p class="subtitle">
+        Merci de choisir ce que vous apporterez. Certaines options se
+        désactivent dès que le nombre maximum de participants est atteint.
+      </p>
+
+      <form id="form-fiesta">
+        <fieldset class="field">
+          <legend>Sélectionnez une option</legend>
+          <div id="options-list">
+            <!-- Cases générées dynamiquement depuis config.js -->
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn-submit">Valider mon choix</button>
+      </form>
+
+      <p id="form-message" class="message" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
