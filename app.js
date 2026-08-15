@@ -1,26 +1,10 @@
-// État des réponses : { apero: 3, sale: 12, fromage: 0, sucre: 1 }
-// En production, cet état serait chargé depuis un backend gratuit
-// (ex : Google Apps Script + Google Sheets). En local, on utilise
-// localStorage pour la démonstration, avec un état initial vide.
-const STORAGE_KEY = "fiesta-ma-counts-v1";
+// Initialisation de Firebase.
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-function loadCounts() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyCounts();
-    return Object.assign(emptyCounts(), JSON.parse(raw));
-  } catch (e) {
-    return emptyCounts();
-  }
-}
-
-function saveCounts(counts) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(counts));
-  } catch (e) {
-    /* localStorage indisponible : on continue sans persistance */
-  }
-}
+// Collection Firestore : un document par option, ex:
+//   collection "counts" / doc "apero" -> { count: 3 }
+let counts = emptyCounts();
 
 function emptyCounts() {
   const counts = {};
@@ -28,7 +12,23 @@ function emptyCounts() {
   return counts;
 }
 
-let counts = loadCounts();
+// Abonnement temps réel aux compteurs : dès qu'un participant coche une
+// option ailleurs, l'affichage se met à jour pour tout le monde.
+function subscribeCounts() {
+  Object.keys(OPTIONS).forEach((key) => {
+    db.collection("counts")
+      .doc(key)
+      .onSnapshot(
+        (doc) => {
+          counts[key] = doc.exists ? doc.data().count || 0 : 0;
+          renderOptions();
+        },
+        (err) => {
+          console.error("Erreur écoute compteurs:", err);
+        }
+      );
+  });
+}
 
 function renderOptions() {
   const container = document.getElementById("options-list");
@@ -80,11 +80,28 @@ function renderOptions() {
   });
 }
 
-function handleSubmit(event) {
+// Incrémentation atomique en base avec contrôle du max côté serveur via
+// une transaction, pour éviter de dépasser le maximum si deux participants
+// valident en même temps.
+async function incrementCount(key) {
+  const ref = db.collection("counts").doc(key);
+  return db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const current = doc.exists ? doc.data().count || 0 : 0;
+    if (current >= OPTIONS[key].max) {
+      throw new Error("MAX_REACHED");
+    }
+    tx.set(ref, { count: current + 1 });
+  });
+}
+
+async function handleSubmit(event) {
   event.preventDefault();
   const messageEl = document.getElementById("form-message");
+  const btn = document.querySelector(".btn-submit");
   messageEl.className = "message";
   messageEl.textContent = "";
+  btn.disabled = true;
 
   const selected = Array.from(
     document.querySelectorAll('input[name="choix"]:checked')
@@ -93,30 +110,49 @@ function handleSubmit(event) {
   if (selected.length === 0) {
     messageEl.className = "message error";
     messageEl.textContent = "Veuillez sélectionner au moins une option.";
+    btn.disabled = false;
     return;
   }
 
-  // Vérifie qu'aucune option sélectionnée n'a déjà atteint son maximum.
-  const blocked = selected.filter((key) => (counts[key] || 0) >= OPTIONS[key].max);
+  // Vérification locale avant écriture.
+  const blocked = selected.filter(
+    (key) => (counts[key] || 0) >= OPTIONS[key].max
+  );
   if (blocked.length > 0) {
     messageEl.className = "message error";
     messageEl.textContent =
-      "Une option sélectionnée n'est plus disponible. Merci de rafraîchir la page.";
+      "Une option sélectionnée n'est plus disponible (maximum atteint).";
     renderOptions();
+    btn.disabled = false;
     return;
   }
 
-  // Incrémente les compteurs.
-  selected.forEach((key) => (counts[key] = (counts[key] || 0) + 1));
-  saveCounts(counts);
-
-  messageEl.className = "message success";
-  messageEl.textContent = "Merci ! Votre choix a bien été enregistré. 🎉";
-  renderOptions();
-  document.getElementById("form-fiesta").reset();
+  try {
+    // Incrémente chaque option sélectionnée dans une transaction.
+    await Promise.all(selected.map((key) => incrementCount(key)));
+    messageEl.className = "message success";
+    messageEl.textContent = "Merci ! Votre choix a bien été enregistré. 🎉";
+    document.getElementById("form-fiesta").reset();
+  } catch (e) {
+    if (e.message === "MAX_REACHED") {
+      messageEl.className = "message error";
+      messageEl.textContent =
+        "Trop tard : le maximum d'une des options a été atteint entre-temps.";
+    } else {
+      messageEl.className = "message error";
+      messageEl.textContent =
+        "Une erreur est survenue. Réessayez dans un instant.";
+      console.error(e);
+    }
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   renderOptions();
-  document.getElementById("form-fiesta").addEventListener("submit", handleSubmit);
+  subscribeCounts();
+  document
+    .getElementById("form-fiesta")
+    .addEventListener("submit", handleSubmit);
 });

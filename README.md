@@ -1,7 +1,8 @@
 # Fête pour Maman 🎉
 
-Site statique (HTML/CSS/JS) permettant d'organiser une fête et de gérer
-les apports des participants.
+Site statique (HTML/CSS/JS + Firebase) permettant d'organiser une fête
+et de gérer les apports des participants avec un comptage **partagé en
+temps réel**.
 
 ## Fonctionnement
 
@@ -19,43 +20,59 @@ avec 4 options, chacune limitée en nombre de participants :
 | J'apporte du sucré             |   12    |
 
 Quand le nombre maximum de réponses est atteint pour une option, sa case
-se **grise** et un message explique qu'elle n'est plus sélectionnable
-car trop de monde l'a déjà choisie.
+se **grise** en temps réel pour tous les participants, avec un message
+expliquant qu'elle n'est plus sélectionnable (trop de monde l'a déjà
+choisie).
 
 ## Contraintes respectées
 
 - Volume d'utilisateurs attendu : 20 max.
 - Site nécessaire jusqu'à fin septembre.
-- Tout est gratuit : HTML/CSS/JS statique, hébergeable gratuitement sur
-  **GitHub Pages**.
+- Tout est gratuit : HTML/CSS/JS statique + Firebase (plan Spark gratuit,
+  largement suffisant pour 20 utilisateurs).
+
+## Backend : Firebase Cloud Firestore
+
+Les compteurs sont stockés dans Firestore (collection `counts`, un
+document par option, ex : `counts/apero -> { count: 3 }`).
+
+- **Lecture** : ouverte à tous (écoute temps réel via `onSnapshot`).
+- **Écriture** : incrément atomique via transaction, avec contrôle du
+  maximum côté client **et** côté serveur (`firestore.rules`).
+
+### Configuration à renseigner
+
+Dans `config.js`, remplacer les valeurs de `firebaseConfig` par celles de
+ton projet Firebase :
+
+```
+Console Firebase → Paramètres du projet → Général → Vos applications → Config SDK
+```
+
+### Règles de sécurité
+
+Déployer `firestore.rules` dans la console Firebase :
+`Firestore Database → Règles → Publier`.
+
+### Base de données (mode production/test)
+
+Créer la base Firestore en mode **production** (les règles ci-dessus
+sécurisent l'accès). Les documents de la collection `counts` sont créés
+automatiquement au premier enregistrement.
 
 ## Structure
 
 ```
-index.html   # structure du formulaire
-config.js    # objet constant OPTIONS (nom + nombre max par option)
-app.js       # logique : rendu des cases, compteur, grisage + explication
-style.css    # mise en forme
+index.html        # structure du formulaire + chargement du SDK Firebase
+config.js         # firebaseConfig + objet constant OPTIONS (nom + nb max)
+app.js            # logique : écoute temps réel, compteur, grisage + explication
+style.css         # mise en forme
+firestore.rules   # règles de sécurité Firestore (max par option côté serveur)
 ```
 
-## Persistance des compteurs
+## Hébergement gratuit
 
-Par défaut, les compteurs sont stockés dans le `localStorage` du
-navigateur (démo fonctionnelle sur un même appareil).
+Deux options gratuites :
 
-Pour un comptage **partagé entre les 20 participants** sans frais,
-brancher un backend gratuit :
-
-1. Créer un Google Sheet avec une feuille `counts` (colonnes `option`,
-   `count`).
-2. Déployer un script Google Apps Script (`doGet`/`doPost`) qui lit et
-   incrémente les compteurs, puis le publier comme application web.
-3. Dans `app.js`, remplacer les appels `loadCounts`/`saveCounts` par des
-   `fetch` vers l'URL de l'app web.
-
-## Hébergement gratuit (GitHub Pages)
-
-1. Pousser les fichiers sur la branche `main`.
-2. Réglages du dépôt → **Pages** → Source : `Deploy from a branch`,
-   branche `main`, dossier `/ (root)`.
-3. Le site est accessible sur `https://Helo3615.github.io/fiesta-ma/`.
+1. **Firebase Hosting** : `firebase deploy` (après `firebase init hosting`).
+2. **GitHub Pages** : Settings du dépôt → Pages → branche `main`, racine.

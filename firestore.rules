@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Compteurs des options : lecture ouverte à tous (formulaire public),
+    // écriture autorisée uniquement pour incrémenter un compteur existant,
+    // avec contrôle du maximum côté serveur.
+    match /counts/{option} {
+      allow read: if true;
+
+      allow create, update: if request.resource.data.count is int
+        && request.resource.data.count >= 0
+        && request.resource.data.count <= getMax(option);
+
+      // Fonction renvoyant le maximum autorisé par option.
+      // (valeurs dupliquées de config.js côté serveur pour sécuriser)
+      function getMax(opt) {
+        return opt == "apero" ? 8 :
+               opt == "sale" ? 12 :
+               opt == "fromage" ? 6 :
+               opt == "sucre" ? 12 : 0;
+      }
+    }
+
+    // Tout le reste : accès interdit.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
